@@ -1,0 +1,17 @@
+name: Test Jita Import
+
+on:
+  workflow_dispatch:
+
+jobs:
+  import-jita:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Import Jita
+        env:
+          CRON_KEY: ${{ secrets.EVE_HAUL_CRON_KEY }}
+        run: |
+          curl --fail-with-body --show-error --verbose \
+            --max-time 600 \
+            "https://eve-houl.byethost15.com/wp-json/eve-haul/v1/market/cron-import?region_id=10000002&key=${CRON_KEY}"
