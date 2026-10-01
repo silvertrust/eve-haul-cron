@@ -56,7 +56,10 @@ jobs:
                   cronResponse ? cronResponse.status() : 'none'
               );
 
-              console.log('Cron final URL:', page.url());
+              console.log(
+                  'Cron final URL:',
+                  page.url()
+              );
 
               console.log(
                   'Cron body:',
@@ -64,4 +67,38 @@ jobs:
               );
 
               console.log('Waiting 5 seconds...');
+
+              await page.waitForTimeout(5000);
+
+              console.log(
+                  'Checking cron status:',
+                  process.env.STATUS_URL
+              );
+
+              const statusResponse = await page.goto(
+                  process.env.STATUS_URL,
+                  {
+                      waitUntil: 'networkidle',
+                      timeout: 30000
+                  }
+              );
+
+              console.log(
+                  'Status HTTP:',
+                  statusResponse ? statusResponse.status() : 'none'
+              );
+
+              console.log(
+                  'Status final URL:',
+                  page.url()
+              );
+
+              console.log(
+                  'Status body:',
+                  await page.locator('body').innerText()
+              );
+
+              await browser.close();
+          })();
+          EOF
 ```
