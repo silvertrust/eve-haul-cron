@@ -25,13 +25,20 @@ jobs:
           const { chromium } = require('playwright');
 
           (async () => {
-              const baseUrl = 'https://' + 'eve-houl.byethost15.com';
+              const slash = String.fromCharCode(47);
+
+              const baseUrl =
+                  'https:' + slash + slash + 'eve-houl.byethost15.com';
 
               const cronUrl =
-                  baseUrl + '/wp-cron.php';
+                  baseUrl + slash + 'wp-cron.php';
 
               const statusUrl =
-                  baseUrl + '/wp-json/eve-haul/v1/test-cron-status';
+                  baseUrl +
+                  slash + 'wp-json' +
+                  slash + 'eve-haul' +
+                  slash + 'v1' +
+                  slash + 'test-cron-status';
 
               const browser = await chromium.launch({
                   headless: true
@@ -44,7 +51,7 @@ jobs:
               const response = await page.goto(
                   cronUrl,
                   {
-                      waitUntil: 'networkidle',
+                      waitUntil: 'domcontentloaded',
                       timeout: 60000
                   }
               );
@@ -78,7 +85,7 @@ jobs:
               const statusResponse = await page.goto(
                   statusUrl,
                   {
-                      waitUntil: 'networkidle',
+                      waitUntil: 'domcontentloaded',
                       timeout: 30000
                   }
               );
