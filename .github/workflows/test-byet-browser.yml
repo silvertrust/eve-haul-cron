@@ -3,6 +3,9 @@ name: EVE Haul Market Import
 on:
   workflow_dispatch:
 
+  schedule:
+    - cron: '*/10 * * * *'
+
 jobs:
   import:
     runs-on: ubuntu-latest
