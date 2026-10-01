@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron:  '*/10 * * * *'
+    - cron: '*/10 * * * *'
 
 jobs:
   import:
@@ -67,23 +67,25 @@ jobs:
                       );
 
                       page.goto(url, {
-    waitUntil: 'commit',
-    timeout: 30000
-}).then((response) => {
-    console.log(
-        'Region',
-        regionId,
-        'HTTP:',
-        response ? response.status() : 'NO RESPONSE'
-    );
-}).catch((error) => {
-    console.log(
-        'Region',
-        regionId,
-        'request ended:',
-        error.message
-    );
-});
+                          waitUntil: 'commit',
+                          timeout: 30000
+                      }).then((response) => {
+                          console.log(
+                              'Region',
+                              regionId,
+                              'HTTP:',
+                              response
+                                  ? response.status()
+                                  : 'NO RESPONSE'
+                          );
+                      }).catch((error) => {
+                          console.log(
+                              'Region',
+                              regionId,
+                              'request ended:',
+                              error.message
+                          );
+                      });
 
                       return page;
                   })
