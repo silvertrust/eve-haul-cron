@@ -43,6 +43,19 @@ jobs:
                   }
               );
 
+              await page.waitForTimeout(3000);
+
+const statusResponse = await page.goto(
+    'https://eve-houl.byethost15.com/wp-json/eve-haul/v1/test-cron-status',
+    {
+        waitUntil: 'networkidle',
+        timeout: 30000
+    }
+);
+
+console.log('Status HTTP:', statusResponse ? statusResponse.status() : 'none');
+console.log('Status body:', await page.locator('body').innerText());
+
               console.log('HTTP status:', response ? response.status() : 'none');
               console.log('Final URL:', page.url());
               console.log('Title:', await page.title());
