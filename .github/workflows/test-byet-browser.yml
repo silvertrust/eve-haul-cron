@@ -1,10 +1,10 @@
-name: EVE Haul Cron
+name: EVE Haul Market Import
 
 on:
   workflow_dispatch:
 
 jobs:
-  cron:
+  import:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +19,9 @@ jobs:
           npm install playwright
           npx playwright install --with-deps chromium
 
-      - name: Trigger WP-Cron
+      - name: Start all region imports
+        env:
+          CRON_KEY: ${{ secrets.EVE_HAUL_CRON_KEY }}
         run: |
           node <<'EOF'
           const { chromium } = require('playwright');
@@ -30,58 +32,68 @@ jobs:
               const baseUrl =
                   'https:' + slash + slash + 'eve-houl.byethost15.com';
 
-              const cronUrl =
-                  baseUrl + slash + 'wp-cron.php';
-
-              const statusUrl =
-                  baseUrl +
-                  slash + 'wp-json' +
-                  slash + 'eve-haul' +
-                  slash + 'v1' +
-                  slash + 'test-jita-status';
+              const regions = [
+                  10000002,
+                  10000043,
+                  10000032,
+                  10000030,
+                  10000042
+              ];
 
               const browser = await chromium.launch({
                   headless: true
               });
 
-              const page = await browser.newPage();
+              const pages = await Promise.all(
+                  regions.map(async (regionId) => {
+                      const page = await browser.newPage();
 
-              console.log('Opening:', cronUrl);
+                      const url =
+                          baseUrl +
+                          slash + 'wp-json' +
+                          slash + 'eve-haul' +
+                          slash + 'v1' +
+                          slash + 'market' +
+                          slash + 'cron-import' +
+                          '?region_id=' + regionId +
+                          '&key=' + encodeURIComponent(process.env.CRON_KEY);
 
-              page.goto(cronUrl, {
-                  waitUntil: 'commit',
-                  timeout: 30000
-              }).catch((error) => {
-                  console.log(
-                      'Cron request ended:',
-                      error.message
-                  );
-              });
+                      console.log(
+                          'Starting region:',
+                          regionId
+                      );
 
-              console.log('Cron request sent.');
+                      page.goto(url, {
+                          waitUntil: 'commit',
+                          timeout: 30000
+                      }).catch((error) => {
+                          console.log(
+                              'Region',
+                              regionId,
+                              'request ended:',
+                              error.message
+                          );
+                      });
 
-              await page.waitForTimeout(5000);
-
-              console.log('Checking status:', statusUrl);
-
-              const response = await page.goto(
-                  statusUrl,
-                  {
-                      waitUntil: 'domcontentloaded',
-                      timeout: 30000
-                  }
+                      return page;
+                  })
               );
 
               console.log(
-                  'Status HTTP:',
-                  response ? response.status() : 'none'
+                  'All region requests sent:',
+                  regions.join(', ')
               );
 
-              console.log(
-                  'Status:',
-                  await page.locator('body').innerText()
+              await new Promise(
+                  resolve => setTimeout(resolve, 5000)
               );
+
+              for (const page of pages) {
+                  await page.close().catch(() => {});
+              }
 
               await browser.close();
+
+              console.log('Done.');
           })();
           EOF
