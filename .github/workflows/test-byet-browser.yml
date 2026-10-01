@@ -1,1 +1,103 @@
-name: Test Byet Browser on: workflow_dispatch: jobs: test: runs-on: ubuntu-latest steps: - uses: actions/checkout@v6 - uses: actions/setup-node@v6 with: node-version: lts/* - name: Install Playwright run: | npm install playwright npx playwright install --with-deps chromium - name: Open Byet wp-cron run: | node <<'EOF' const { chromium } = require('playwright'); (async () => { const baseUrl = 'https://' + 'eve-houl.byethost15.com'; const cronUrl = baseUrl + '/wp-cron.php'; const statusUrl = baseUrl + '/wp-json/eve-haul/v1/test-cron-status'; const browser = await chromium.launch({ headless: true }); const page = await browser.newPage(); console.log('Opening:', cronUrl); const response = await page.goto( cronUrl, { waitUntil: 'networkidle', timeout: 60000 } ); console.log( 'HTTP status:', response ? response.status() : 'none' ); console.log( 'Final URL:', page.url() ); console.log( 'Title:', await page.title() ); console.log( 'Body:', (await page.locator('body').innerText()).slice(0, 1000) ); console.log('Waiting 5 seconds...'); await page.waitForTimeout(5000); console.log('Checking cron status:', statusUrl); const statusResponse = await page.goto( statusUrl, { waitUntil: 'networkidle', timeout: 30000 } ); console.log( 'Status HTTP:', statusResponse ? statusResponse.status() : 'none' ); console.log( 'Status final URL:', page.url() ); console.log( 'Status body:', await page.locator('body').innerText() ); await browser.close(); })(); EOF
+name: Test Byet Browser on: workflow_dispatch:
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Install Playwright
+        run: |
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Open Byet wp-cron
+        run: |
+          node <<'EOF'
+          const { chromium } = require('playwright');
+
+          (async () => {
+              const baseUrl = 'https://' + 'eve-houl.byethost15.com';
+
+              const cronUrl =
+                  baseUrl + '/wp-cron.php';
+
+              const statusUrl =
+                  baseUrl + '/wp-json/eve-haul/v1/test-cron-status';
+
+              const browser = await chromium.launch({
+                  headless: true
+              });
+
+              const page = await browser.newPage();
+
+              console.log('Opening:', cronUrl);
+
+              const response = await page.goto(
+                  cronUrl,
+                  {
+                      waitUntil: 'networkidle',
+                      timeout: 60000
+                  }
+              );
+
+              console.log(
+                  'HTTP status:',
+                  response ? response.status() : 'none'
+              );
+
+              console.log(
+                  'Final URL:',
+                  page.url()
+              );
+
+              console.log(
+                  'Title:',
+                  await page.title()
+              );
+
+              console.log(
+                  'Body:',
+                  (await page.locator('body').innerText()).slice(0, 1000)
+              );
+
+              console.log('Waiting 5 seconds...');
+
+              await page.waitForTimeout(5000);
+
+              console.log('Checking cron status:', statusUrl);
+
+              const statusResponse = await page.goto(
+                  statusUrl,
+                  {
+                      waitUntil: 'networkidle',
+                      timeout: 30000
+                  }
+              );
+
+              console.log(
+                  'Status HTTP:',
+                  statusResponse ? statusResponse.status() : 'none'
+              );
+
+              console.log(
+                  'Status final URL:',
+                  page.url()
+              );
+
+              console.log(
+                  'Status body:',
+                  await page.locator('body').innerText()
+              );
+
+              await browser.close();
+          })();
+          EOF
