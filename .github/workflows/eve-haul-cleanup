@@ -1,0 +1,18 @@
+
+name: EVE Haul Cleanup
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run cleanup
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --max-time 120 \
+            "https://YOUR-DOMAIN.com/wp-json/eve-haul/v1/market/cleanup?key=${{ secrets.EVE_HAUL_CRON_KEY }}"
