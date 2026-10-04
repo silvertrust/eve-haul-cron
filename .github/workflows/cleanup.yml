@@ -54,7 +54,7 @@ jobs:
 
               try {
                   const response = await page.goto(url, {
-                      waitUntil: 'commit',
+                      waitUntil: 'networkidle',
                       timeout: 30000
                   });
 
