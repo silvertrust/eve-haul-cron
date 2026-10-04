@@ -1,4 +1,3 @@
-
 name: EVE Haul Cleanup
 
 on:
@@ -13,6 +12,10 @@ jobs:
     steps:
       - name: Run cleanup
         run: |
-          curl --fail-with-body --silent --show-error \
+          curl \
+            --fail-with-body \
+            --show-error \
+            --location \
+            --verbose \
             --max-time 120 \
             "https://eve-houl.byethost15.com//wp-json/eve-haul/v1/market/cleanup?key=${{ secrets.EVE_HAUL_CRON_KEY }}"
