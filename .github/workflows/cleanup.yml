@@ -1,18 +1,90 @@
 name: EVE Haul Cleanup
 
 on:
+  workflow_dispatch:
+
   schedule:
     - cron: '0 */3 * * *'
-  workflow_dispatch:
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Run cleanup
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Install Playwright
         run: |
-         curl \
-          --verbose \
-          --max-time 30 \
-          "https://eve-houl.byethost15.com/"
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Run cleanup
+        env:
+          CRON_KEY: ${{ secrets.EVE_HAUL_CRON_KEY }}
+        run: |
+          node <<'EOF'
+          const { chromium } = require('playwright');
+
+          (async () => {
+              const slash = String.fromCharCode(47);
+
+              const baseUrl =
+                  'https:' + slash + slash + 'eve-houl.byethost15.com';
+
+              const url =
+                  baseUrl +
+                  slash + 'wp-json' +
+                  slash + 'eve-haul' +
+                  slash + 'v1' +
+                  slash + 'market' +
+                  slash + 'cleanup' +
+                  '?key=' + encodeURIComponent(process.env.CRON_KEY);
+
+              console.log('Starting cleanup...');
+
+              const browser = await chromium.launch({
+                  headless: true
+              });
+
+              const page = await browser.newPage();
+
+              try {
+                  const response = await page.goto(url, {
+                      waitUntil: 'commit',
+                      timeout: 30000
+                  });
+
+                  console.log(
+                      'Cleanup HTTP:',
+                      response
+                          ? response.status()
+                          : 'NO RESPONSE'
+                  );
+
+                  if (response) {
+                      const body = await response.text();
+
+                      console.log(
+                          'Cleanup BODY:',
+                          body.substring(0, 2000)
+                      );
+                  }
+              } catch (error) {
+                  console.log(
+                      'Cleanup request ended:',
+                      error.message
+                  );
+
+                  process.exitCode = 1;
+              } finally {
+                  await page.close().catch(() => {});
+                  await browser.close();
+              }
+
+              console.log('Done.');
+          })();
+          EOF
