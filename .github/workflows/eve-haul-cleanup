@@ -15,4 +15,4 @@ jobs:
         run: |
           curl --fail-with-body --silent --show-error \
             --max-time 120 \
-            "https://YOUR-DOMAIN.com/wp-json/eve-haul/v1/market/cleanup?key=${{ secrets.EVE_HAUL_CRON_KEY }}"
+            "https://eve-houl.byethost15.com//wp-json/eve-haul/v1/market/cleanup?key=${{ secrets.EVE_HAUL_CRON_KEY }}"
