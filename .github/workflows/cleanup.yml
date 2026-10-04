@@ -53,33 +53,76 @@ jobs:
               const page = await browser.newPage();
 
               try {
-                  const response = await page.goto(url, {
-                      waitUntil: 'networkidle',
+                  page.goto(url, {
+                      waitUntil: 'commit',
                       timeout: 30000
+                  }).then((response) => {
+                      console.log(
+                          'Initial HTTP:',
+                          response
+                              ? response.status()
+                              : 'NO RESPONSE'
+                      );
+                  }).catch((error) => {
+                      console.log(
+                          'Initial request:',
+                          error.message
+                      );
                   });
 
-                  console.log(
-                      'Cleanup HTTP:',
-                      response
-                          ? response.status()
-                          : 'NO RESPONSE'
-                  );
+                  const startedAt = Date.now();
 
-                  if (response) {
-                      const body = await response.text();
+                  while (Date.now() - startedAt < 30000) {
+                      const currentUrl = page.url();
 
-                      console.log(
-                          'Cleanup BODY:',
-                          body.substring(0, 2000)
+                      if (currentUrl.includes('i=1')) {
+                          console.log(
+                              'Anti-bot challenge completed.'
+                          );
+
+                          break;
+                      }
+
+                      await new Promise(
+                          resolve => setTimeout(resolve, 500)
                       );
                   }
+
+                  const finalUrl = page.url();
+
+                  console.log(
+                      'Final URL:',
+                      finalUrl.replace(
+                          process.env.CRON_KEY,
+                          '***'
+                      )
+                  );
+
+                  const body = await page.locator('body').innerText();
+
+                  console.log(
+                      'Cleanup BODY:',
+                      body.substring(0, 2000)
+                  );
+
+                  if (!finalUrl.includes('i=1')) {
+                      throw new Error(
+                          'Anti-bot challenge did not complete within 30 seconds.'
+                      );
+                  }
+
+                  console.log(
+                      'Cleanup request completed.'
+                  );
+
               } catch (error) {
                   console.log(
-                      'Cleanup request ended:',
+                      'Cleanup failed:',
                       error.message
                   );
 
                   process.exitCode = 1;
+
               } finally {
                   await page.close().catch(() => {});
                   await browser.close();
