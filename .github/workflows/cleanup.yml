@@ -53,74 +53,69 @@ jobs:
               const page = await browser.newPage();
 
               try {
-                  page.goto(url, {
+                  const response = await page.goto(url, {
                       waitUntil: 'commit',
-                      timeout: 30000
-                  }).then((response) => {
-                      console.log(
-                          'Initial HTTP:',
-                          response
-                              ? response.status()
-                              : 'NO RESPONSE'
-                      );
-                  }).catch((error) => {
-                      console.log(
-                          'Initial request:',
-                          error.message
-                      );
+                      timeout: 60000
                   });
 
-                  const startedAt = Date.now();
-
-                  while (Date.now() - startedAt < 30000) {
-                      const currentUrl = page.url();
-
-                      if (currentUrl.includes('i=1')) {
-                          console.log(
-                              'Anti-bot challenge completed.'
-                          );
-
-                          break;
-                      }
-
-                      await new Promise(
-                          resolve => setTimeout(resolve, 500)
-                      );
-                  }
-
-                  const finalUrl = page.url();
-
                   console.log(
-                      'Final URL:',
-                      finalUrl.replace(
-                          process.env.CRON_KEY,
-                          '***'
-                      )
+                      'Initial HTTP:',
+                      response ? response.status() : 'NO RESPONSE'
                   );
 
-                  const body = await page.locator('body').innerText();
+                  await page.waitForLoadState('domcontentloaded', {
+                      timeout: 15000
+                  }).catch(() => {});
+
+                  const body = (
+                      await page.locator('body').innerText()
+                  ).trim();
 
                   console.log(
                       'Cleanup BODY:',
                       body.substring(0, 2000)
                   );
 
-                  if (!finalUrl.includes('i=1')) {
+                  if (!response || !response.ok()) {
                       throw new Error(
-                          'Anti-bot challenge did not complete within 30 seconds.'
+                          'Cleanup HTTP request failed: ' +
+                          (response ? response.status() : 'no response')
                       );
                   }
 
-                  console.log(
-                      'Cleanup request completed.'
-                  );
+                  let result;
+
+                  try {
+                      result = JSON.parse(body);
+                  } catch {
+                      throw new Error(
+                          'Cleanup did not return valid JSON.'
+                      );
+                  }
+
+                  const requiredFields = [
+                      'deleted_snapshots',
+                      'deleted_orders',
+                      'skipped_current',
+                      'skipped_historical'
+                  ];
+
+                  for (const field of requiredFields) {
+                      if (
+                          !Object.prototype.hasOwnProperty.call(result, field) ||
+                          !Number.isFinite(Number(result[field]))
+                      ) {
+                          throw new Error(
+                              'Invalid cleanup response field: ' + field
+                          );
+                      }
+                  }
+
+                  console.log('Cleanup completed successfully.');
+                  console.log(JSON.stringify(result));
 
               } catch (error) {
-                  console.log(
-                      'Cleanup failed:',
-                      error.message
-                  );
-
+                  console.error('Cleanup failed:', error.message);
                   process.exitCode = 1;
 
               } finally {
